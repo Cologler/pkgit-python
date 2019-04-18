@@ -23,13 +23,13 @@ def build_from_local_path(root, parent=None, d=None):
             continue
         sub_node = os.path.join(parent_fullpath, name)
         if os.path.isfile(sub_node):
-            if name.lower().endswith('.gitignore'):
+            if name.endswith('.gitignore'):
                 k = name[:-len('.gitignore')]
                 if parent:
                     v = '/'.join([parent, name])
                 else:
                     v = name
-                d[k.lower()] = v.replace('\\', '/')
+                d[k] = v.replace('\\', '/')
         elif os.path.isdir(sub_node):
             dirs.append(name)
     for name in dirs:
