@@ -61,7 +61,7 @@ def update_gitignore(ctx: click.Context):
     click.echo(f'updated gitignore for {gi_envs}')
 
 class Git:
-    '''sub commands for git module'''
+    '''sub commands for git system'''
     class Gitignore:
         def update(self, ctx: click.Context):
             '''update local gitignore'''

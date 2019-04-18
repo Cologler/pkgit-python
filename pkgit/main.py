@@ -13,11 +13,13 @@ from click_anno import click_app
 
 from .cmds.init import init
 from .cmds.git import Git
+from .cmds.license import License
 
 @click_app
 class App:
     init = init
     git = Git
+    lice = License
 
 
 def main(argv=None):

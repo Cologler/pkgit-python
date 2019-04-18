@@ -74,5 +74,13 @@ class PkgitConf:
         if self._is_local_new or self._local_changed:
             self._local_file.dump(self.get_local_conf())
 
+    def proxy_get(self, key):
+        local_conf = self.get_local_conf()
+        if key in local_conf:
+            return local_conf[key]
+        global_conf = self.get_global_conf()
+        if key in global_conf:
+            return global_conf[key]
+        return None
 
 pkgit_ioc.register_singleton(PkgitConf, inject_by_name(PkgitConf))

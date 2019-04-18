@@ -10,8 +10,10 @@ import fsoopify
 
 from ..core import pkgit_ioc, PkgitConf
 from .git import update_gitignore
+from .license import set_new_license, update_license
 
-def init(self, ctx: click.Context, envs: str):
+
+def init(self, ctx: click.Context, envs: str, license=None):
     ''' init project on current project. '''
     if not envs:
         ctx.fail(
@@ -29,9 +31,14 @@ def init(self, ctx: click.Context, envs: str):
 
     conf: PkgitConf = pkgit_ioc.get(PkgitConf)
     local_conf = conf.get_local_conf()
-    if conf.is_local_new:
-        local_conf['envs'] = keys
-    else:
+    if not conf.is_local_new:
         ctx.fail('You cannot init a project again')
-    conf.save()
+
+    if license is not None:
+        set_new_license(ctx, conf, license)
+    local_conf['envs'] = keys
+
+    update_license(ctx, conf)
     update_gitignore(ctx)
+
+    conf.save()
