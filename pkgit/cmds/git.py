@@ -9,7 +9,7 @@ import click
 import fsoopify
 
 from ..core import pkgit_ioc, PkgitConf
-from ..core.envs import Envs, EnvsValues
+from ..core.envs import Envs
 
 def make_env_gitignore_map():
     self_file = fsoopify.Path(__file__)
@@ -55,7 +55,7 @@ def update_gitignore(ctx: click.Context):
         sb.append('')
 
     doc = '\n'.join(sb)
-    fsoopify.FileInfo('.gitignore').write_text(doc, append=False)
+    fsoopify.FileInfo(pkgit_ioc['cwd'] / '.gitignore').write_text(doc, append=False)
 
     gi_envs = ', '.join(click.style(z[0], fg='green') for z in gitignores)
     click.echo(f'updated gitignore for {gi_envs}')
