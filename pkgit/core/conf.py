@@ -36,7 +36,9 @@ class PkgitConf:
 
     @property
     def is_local_new(self):
-        return self._is_local_new
+        if self._is_local_new is not None:
+            return self._is_local_new
+        return not self._local_file.is_file()
 
     def create_local(self) -> bool:
         if self._local_conf.is_file():
@@ -44,12 +46,6 @@ class PkgitConf:
         self._is_local_new = True
         self._local_conf.dump({})
         return True
-
-    def _load_dict(self, file: FileInfo):
-        if file.is_file():
-            return file.load()
-        else:
-            return {}
 
     @gettercache
     def get_local_conf(self) -> dict:

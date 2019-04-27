@@ -21,10 +21,11 @@ def init(self, ctx: click.Context, envs: str, license=None):
             click.style('python+vscode', fg='blue')
         )
     envs_list = envs.split('+')
-    from ..core.envs import ENVS_MAP
+
+    from ..core.envs import Envs
     keys = []
     for env in envs_list:
-        k = ENVS_MAP.get(env)
+        k = Envs.map.get(env)
         if k is None:
             ctx.fail('Unable to parse env: ' + click.style(env, fg='green'))
         keys.append(k)
@@ -38,7 +39,11 @@ def init(self, ctx: click.Context, envs: str, license=None):
         set_new_license(ctx, conf, license)
     local_conf['envs'] = keys
 
+    from ..env_builders import IEnvBuilder
+    for builder in IEnvBuilder.get_builders(ctx, conf):
+        builder.init()
+
     update_license(ctx, conf)
-    update_gitignore(ctx)
+    #update_gitignore(ctx, conf)
 
     conf.save()

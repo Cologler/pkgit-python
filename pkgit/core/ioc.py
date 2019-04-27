@@ -8,3 +8,8 @@
 from anyioc import ServiceProvider
 
 pkgit_ioc = ServiceProvider()
+
+def lazy(factory):
+    key = object()
+    pkgit_ioc.register_singleton(key, factory)
+    return lambda: pkgit_ioc[key]

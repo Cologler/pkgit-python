@@ -10,6 +10,7 @@ from typing import Set, Dict
 from collections import namedtuple
 
 class EnvKind(IntEnum):
+    vcs =  auto() # version control system
     lang = auto()
     editor = auto()
     tool = auto()
@@ -29,6 +30,11 @@ class BaseEnv:
             setattr(cls, '_value', s)
             return s
 
+class VersionControlSystem:
+    kind = EnvKind.vcs
+
+    GIT = 'git'
+
 class Languages(BaseEnv):
     kind = EnvKind.lang
 
@@ -44,7 +50,7 @@ class Tools(BaseEnv):
 
     PIPENV = 'pipenv'
 
-class Envs(Languages, Editors, Tools):
+class Envs(VersionControlSystem, Languages, Editors, Tools):
     map: Dict[str, str] = None
 
 Envs.map = dict((v, v) for v in Envs.values())
