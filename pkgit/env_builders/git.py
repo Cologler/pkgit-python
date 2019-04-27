@@ -75,7 +75,8 @@ class GitIgnoreEnvBuilder(IEnvBuilder):
             sb.append('#' * 5 + f'  url: {url}')
             sb.append('#' * 100)
             sb.append('')
-            click.echo(f'   http get <{url}> ...')
+            url_s = click.style(url, fg='green')
+            click.echo(f'   http get {url_s} ...')
             r = requests.get(url)
             if r.status_code != 200:
                 sc = click.style(str(r.status_code), fg='red')

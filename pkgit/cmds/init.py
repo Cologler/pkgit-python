@@ -9,7 +9,6 @@ import click
 import fsoopify
 
 from ..core import pkgit_ioc, PkgitConf
-from .git import update_gitignore
 from .license import set_new_license, update_license
 
 
@@ -44,6 +43,5 @@ def init(self, ctx: click.Context, envs: str, license=None):
         builder.init()
 
     update_license(ctx, conf)
-    #update_gitignore(ctx, conf)
 
     conf.save()
