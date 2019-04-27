@@ -9,7 +9,6 @@ import fsoopify
 import click
 
 from ..core.ioc import pkgit_ioc, lazy
-from ..core.conf import PkgitConf
 from ..core.envs import Envs
 from . import IEnvBuilder
 

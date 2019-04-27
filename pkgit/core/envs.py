@@ -14,6 +14,7 @@ class EnvKind(IntEnum):
     lang = auto()
     editor = auto()
     tool = auto()
+    framework = auto()
 
 class BaseEnv:
     @classmethod
@@ -30,7 +31,7 @@ class BaseEnv:
             setattr(cls, '_value', s)
             return s
 
-class VersionControlSystem:
+class VCS:
     kind = EnvKind.vcs
 
     GIT = 'git'
@@ -50,7 +51,12 @@ class Tools(BaseEnv):
 
     PIPENV = 'pipenv'
 
-class Envs(VersionControlSystem, Languages, Editors, Tools):
+class Frameworks(BaseEnv):
+    kind = EnvKind.framework
+
+    PYTEST = 'pytest'
+
+class Envs(VCS, Languages, Editors, Tools, Frameworks):
     map: Dict[str, str] = None
 
 Envs.map = dict((v, v) for v in Envs.values())

@@ -5,16 +5,16 @@
 #
 # ----------
 
-from abc import ABC, abstractmethod
 from typing import List
 
 from click import Context
 import fsoopify
 import execode
 
+from ..core.ioc import pkgit_ioc
 from ..core.conf import PkgitConf
 
-class IEnvBuilder(ABC):
+class IEnvBuilder:
     _builders = {}
 
     def __init__(self, ctx, conf):
@@ -33,16 +33,27 @@ class IEnvBuilder(ABC):
     def get_builders(ctx, conf) -> List['IEnvBuilder']:
         local_conf = conf.get_local_conf()
         builders = []
-        for env in  local_conf.get('envs', ()):
+        for env in local_conf.get('envs', ()):
             builders.extend(IEnvBuilder.get_builders_for_env(env, ctx, conf))
         return builders
 
-    @abstractmethod
     def update(self):
-        raise NotImplementedError
+        pass
 
     def init(self):
-        return self.update()
+        pass
+
+    # helpers
+
+    def get_envs(self) -> list:
+        '''get envs list from conf'''
+        local_conf = self._conf.get_local_conf()
+        return local_conf.get('envs', ())
+
+    def get_cwd(self) -> fsoopify.DirectoryInfo:
+        '''get cwd for the proj'''
+        return fsoopify.DirectoryInfo(pkgit_ioc['cwd'])
+
 
 env_builders_dir = fsoopify.Path.from_caller_file().dirname
 
