@@ -7,3 +7,4 @@
 
 from .ioc import pkgit_ioc
 from .conf import PkgitConf
+from .envs import Envs

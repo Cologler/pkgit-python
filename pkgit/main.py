@@ -16,6 +16,7 @@ from fsoopify import Path, DirectoryInfo
 from .cmds.init import init
 from .cmds.git import Git
 from .cmds.license import License
+from .cmds.env import Env
 
 @click_app
 class App:
@@ -32,6 +33,7 @@ class App:
         pkgit_ioc.register_value('cwd', cwd)
 
     init = init
+    env = Env
     git = Git
     lice = License
 

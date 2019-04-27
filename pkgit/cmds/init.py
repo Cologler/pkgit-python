@@ -10,6 +10,7 @@ import fsoopify
 
 from ..core import pkgit_ioc, PkgitConf
 from .license import set_new_license, update_license
+from .env import get_wellknow_envs
 
 
 def init(self, ctx: click.Context, envs: str, license=None):
@@ -21,13 +22,7 @@ def init(self, ctx: click.Context, envs: str, license=None):
         )
     envs_list = envs.split('+')
 
-    from ..core.envs import Envs
-    keys = []
-    for env in envs_list:
-        k = Envs.map.get(env)
-        if k is None:
-            ctx.fail('Unable to parse env: ' + click.style(env, fg='green'))
-        keys.append(k)
+    keys = get_wellknow_envs(ctx, envs_list)
 
     conf: PkgitConf = pkgit_ioc.get(PkgitConf)
     local_conf = conf.get_local_conf()
