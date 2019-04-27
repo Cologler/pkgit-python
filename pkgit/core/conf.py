@@ -40,13 +40,6 @@ class PkgitConf:
             return self._is_local_new
         return not self._local_file.is_file()
 
-    def create_local(self) -> bool:
-        if self._local_conf.is_file():
-            return False
-        self._is_local_new = True
-        self._local_conf.dump({})
-        return True
-
     @gettercache
     def get_local_conf(self) -> dict:
         if self._local_file.is_file():
@@ -54,7 +47,7 @@ class PkgitConf:
             return self._local_file.load()
         else:
             self._is_local_new = True
-            return {}
+            return self.get_global_conf().copy()
 
     @gettercache
     def get_global_conf(self) -> dict:
