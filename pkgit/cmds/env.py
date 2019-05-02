@@ -47,6 +47,7 @@ class Env(InitedCommand):
             self._ctx.fail('all envs in your .pkgit already')
 
         self._local_conf['envs'] = self._local_conf.get('envs', []) + keys
+        self._conf.mark_local_changed()
 
         from ..env_builders import IEnvBuilder
         for env in keys:
