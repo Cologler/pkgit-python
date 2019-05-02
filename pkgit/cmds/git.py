@@ -33,5 +33,5 @@ class Git(GitBase):
 
             from ..env_builders import IEnvBuilder
             for builder in IEnvBuilder.get_builders_for_env(Envs.GIT, ctx, conf):
-                builder.init()
+                builder.update()
 
