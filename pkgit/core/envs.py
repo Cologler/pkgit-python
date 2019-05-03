@@ -11,6 +11,7 @@ from collections import namedtuple
 
 class EnvKind(IntEnum):
     vcs =  auto() # version control system
+    runtime = auto() # runtime
     lang = auto()
     editor = auto()
     tool = auto()
@@ -31,15 +32,22 @@ class BaseEnv:
             setattr(cls, '_value', s)
             return s
 
-class VCS:
+class VCS(BaseEnv):
     kind = EnvKind.vcs
 
     GIT = 'git'
+
+class Runtimes(BaseEnv):
+    kind = EnvKind.runtime
+
+    NODE = 'node'
 
 class Languages(BaseEnv):
     kind = EnvKind.lang
 
     PYTHON = 'python'
+    TYPE_SCRIPT = 'typescript'
+    JAVA_SCRIPT = 'javascript'
 
 class Editors(BaseEnv):
     kind = EnvKind.editor
@@ -56,12 +64,14 @@ class Frameworks(BaseEnv):
 
     PYTEST = 'pytest'
 
-class Envs(VCS, Languages, Editors, Tools, Frameworks):
+class Envs(VCS, Runtimes, Languages, Editors, Tools, Frameworks):
     map: Dict[str, str] = None
 
 Envs.map = dict((v, v) for v in Envs.values())
 Envs.map['vsc'] = Editors.VSCODE
 Envs.map['py'] = Languages.PYTHON
+Envs.map['ts'] = Languages.TYPE_SCRIPT
+Envs.map['js'] = Languages.JAVA_SCRIPT
 
 EnvVal = namedtuple('EnvVal', ['kind', 'value'])
 

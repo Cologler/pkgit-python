@@ -50,9 +50,13 @@ class IEnvBuilder:
         local_conf = self._conf.get_local_conf()
         return local_conf.get('envs', ())
 
+    def get_cwd_path(self) -> fsoopify.Path:
+        '''get cwd path for the proj'''
+        return pkgit_ioc['cwd']
+
     def get_cwd(self) -> fsoopify.DirectoryInfo:
         '''get cwd for the proj'''
-        return fsoopify.DirectoryInfo(pkgit_ioc['cwd'])
+        return fsoopify.DirectoryInfo(self.get_cwd_path())
 
 
 env_builders_dir = fsoopify.Path.from_caller_file().dirname
