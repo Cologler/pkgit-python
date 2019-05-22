@@ -115,20 +115,22 @@ class BuilderCollection:
             builder.fix_env()
 
         local_conf = conf.get_local_conf()
-        envs_src = local_conf.get('envs', ())
-        envs_set = set(envs_src)
-        for env in envs_src:
+        envs = set(local_conf.get('envs', ()))
+        deps = {}
+        for env in envs:
             requires = get_env_requires(env)
-            for new in (requires - envs_set):
+            for new in (requires - envs):
+                deps.setdefault(new, []).append(env)
+        if deps:
+            for dep, dep_src in deps.items():
                 echo(
-                    'added env {} because env {} require it'.format(
+                    'added env {} because of env {} require it'.format(
                         style(new, fg='green'),
-                        style(env, fg='green')
+                        ', '.join([style(x, fg='green') for x in dep_src])
                     )
                 )
-            envs_set.update(get_env_requires(env))
-        if len(envs_set) > len(envs_src):
-            local_conf['envs'] = list(envs_set)
+            envs.update(deps)
+            local_conf['envs'] = list(envs)
 
     def init(self):
         for builder in self._get_builders():

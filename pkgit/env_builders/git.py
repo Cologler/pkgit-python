@@ -34,7 +34,7 @@ class GitEnvBuilder(IEnvBuilder):
             git_dir_name = '.git'
             if self.get_cwd().get_dirinfo(git_dir_name).is_directory():
                 click.echo(
-                    'added env {} because found dir {}'.format(
+                    'added env {} because of found dir {}'.format(
                         click.style(Envs.GIT, fg='green'),
                         click.style(git_dir_name, fg='green')
                     )
