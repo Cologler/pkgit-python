@@ -7,10 +7,10 @@
 
 from click import style
 
-from . import IEnvBuilder, declare_env_requires
+from . import IEnvBuilder, declare_requires
 from ..core.envs import Envs
 
-declare_env_requires(Envs.PIPENV, Envs.PYTHON)
+declare_requires(Envs.PIPENV, Envs.PYTHON)
 
 class PipenvEnvBuilder(IEnvBuilder):
     env = Envs.GIT

@@ -13,18 +13,9 @@ import execode
 from anyioc.g import get_namespace_provider
 
 from ..core.conf import PkgitConf
+from ..core.deps import get_requires, declare_requires
 
 ioc = get_namespace_provider()
-
-_requires_envs = {}
-
-def declare_env_requires(env, *require_envs):
-    s: set = _requires_envs.setdefault(env, set())
-    assert isinstance(require_envs, tuple)
-    s.update(require_envs)
-
-def get_env_requires(env) -> List[str]:
-    return frozenset(_requires_envs.get(env, ()))
 
 _builders = {}
 _builders_fix_env = []
@@ -118,7 +109,7 @@ class BuilderCollection:
 
     def fix_env(self):
         echo(
-            'prepare:'
+            'prepare'
         )
 
         ctx = self._ctx
@@ -131,7 +122,7 @@ class BuilderCollection:
         envs = set(local_conf.get('envs', ()))
         deps = {}
         for env in envs:
-            requires = get_env_requires(env)
+            requires = get_requires(env).get_requires_chain()
             for new in (requires - envs):
                 deps.setdefault(new, []).append(env)
         if deps:

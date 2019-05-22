@@ -5,10 +5,10 @@
 #
 # ----------
 
-from . import IEnvBuilder, declare_env_requires
+from . import IEnvBuilder, declare_requires
 from ..core.envs import Envs
 
-declare_env_requires(Envs.PYTEST, Envs.PYTHON)
+declare_requires(Envs.PYTEST, Envs.PYTHON)
 
 class PyTestEnvBuilder(IEnvBuilder):
     env = Envs.PYTEST
