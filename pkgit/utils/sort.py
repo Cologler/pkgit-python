@@ -51,12 +51,14 @@ class SortRule:
         return code
 
     def sort(self, iterable):
-        return sorted(iterable, key=self.get_key)
+        cached = SortRule()
+        cached._data.update(dict((k, _CachedNode(v)) for (k, v) in self._data.items()))
+        return sorted(iterable, key=cached.get_key)
 
 
 class _EmptyNode:
     def __repr__(self):
-        return '_EmptyNode()'
+        return 'Empty()'
 
     def get_before_chain(self):
         return _empty_set
@@ -66,6 +68,21 @@ class _EmptyNode:
 
 _empty = _EmptyNode()
 
+
+class _CachedNode:
+    def __init__(self, node):
+        self._node = node
+
+    def get_order_code(self):
+        try:
+            return self._value
+        except AttributeError:
+            pass
+
+        self._value = self._node.get_order_code()
+        return self._value
+
+
 class _SortNode:
     def __init__(self, me, manager):
         self._me = me # value of this node
@@ -73,7 +90,7 @@ class _SortNode:
         self._before_me = set()
 
     def __repr__(self):
-        return f'_SortNode({self._before_me})'
+        return f'SortNode({self._before_me})'
 
     def has_before(self, value):
         if self._me == value:
@@ -91,3 +108,5 @@ class _SortNode:
 
     def get_order_code(self):
         return sum(self._manager._get_node(x).get_order_code() for x in self._before_me) + 1
+
+
