@@ -8,9 +8,10 @@
 import fsoopify
 import click
 
-from ..core.ioc import pkgit_ioc, lazy
-from ..core.envs import Envs
 from . import IEnvBuilder
+from ..utils import lazy
+from ..core.ioc import pkgit_ioc
+from ..core.envs import Envs
 
 def make_env_gitignore_map():
     self_file = fsoopify.Path(__file__)
@@ -51,7 +52,7 @@ class GitIgnoreEnvBuilder(IEnvBuilder):
         import requests
 
         local_conf = self._conf.get_local_conf()
-        gitignore_map = gitignore_map_factory()
+        gitignore_map: dict = gitignore_map_factory()
 
         gitignores = []
         for env in local_conf.get('envs', ()):

@@ -5,11 +5,6 @@
 #
 # ----------
 
-from anyioc import ServiceProvider
+from anyioc.g import get_namespace_provider
 
-pkgit_ioc = ServiceProvider()
-
-def lazy(factory):
-    key = object()
-    pkgit_ioc.register_singleton(key, factory)
-    return lambda: pkgit_ioc[key]
+pkgit_ioc = get_namespace_provider()
