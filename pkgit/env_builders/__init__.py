@@ -29,19 +29,6 @@ class IEnvBuilder:
 
         _builder_classes.setdefault(cls.env, []).append(cls)
 
-    @staticmethod
-    def get_builders_for_env(env, ctx, conf):
-        classes = _builder_classes.get(env, ())
-        return [cls(ctx, conf) for cls in classes]
-
-    @staticmethod
-    def get_builders(ctx, conf) -> List['IEnvBuilder']:
-        local_conf = conf.get_local_conf()
-        builders = []
-        for env in local_conf.get('envs', ()):
-            builders.extend(IEnvBuilder.get_builders_for_env(env, ctx, conf))
-        return builders
-
     # exec core
 
     def invoke(self, command: str):
