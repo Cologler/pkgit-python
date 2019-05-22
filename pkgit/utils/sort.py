@@ -31,6 +31,7 @@ class SortRule:
             code = (1, node)
         else:
             code = (0, node.get_order_code())
+        print(item, code, node)
         return code
 
     def sort(self, iterable):
@@ -38,6 +39,9 @@ class SortRule:
 
 
 class _EmptyNode:
+    def __repr__(self):
+        return '_EmptyNode()'
+
     def get_before_chain(self):
         return _empty_set
 
@@ -51,6 +55,9 @@ class _SortNode:
         self._me = me # value of this node
         self._manager: SortManager = manager
         self._before_me = set()
+
+    def __repr__(self):
+        return f'_SortNode({self._before_me})'
 
     def has_before(self, value):
         if self._me == value:
@@ -67,4 +74,4 @@ class _SortNode:
         return ret
 
     def get_order_code(self):
-        return sum(self._manager._get_node(x).get_order_code() for x in self._before_me)
+        return sum(self._manager._get_node(x).get_order_code() for x in self._before_me) + 1
