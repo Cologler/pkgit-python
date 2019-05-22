@@ -33,9 +33,8 @@ def init(self, ctx: click.Context, envs: str, license=None):
         set_new_license(ctx, conf, license)
     local_conf['envs'] = keys
 
-    from ..env_builders import IEnvBuilder
-    for builder in IEnvBuilder.get_builders(ctx, conf):
-        builder.init()
+    from ..env_builders import BuilderCollection
+    BuilderCollection.from_conf().init()
 
     update_license(ctx, conf)
 

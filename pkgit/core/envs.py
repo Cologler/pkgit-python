@@ -5,9 +5,23 @@
 #
 # ----------
 
+from itertools import chain
 from enum import IntEnum, auto
 from typing import Set, Dict
 from collections import namedtuple
+
+from ..utils.caching import cache_on_dict
+
+_declared_items = {}
+
+def declare(fullname, *alias):
+    for name in chain([fullname], alias):
+        assert name not in _declared_items
+        _declared_items[name] = fullname
+    return fullname
+
+def get_env(key, d=None):
+    return _declared_items.get(key, d)
 
 class EnvKind(IntEnum):
     vcs =  auto() # version control system
@@ -35,34 +49,35 @@ class BaseEnv:
 class VCS(BaseEnv):
     kind = EnvKind.vcs
 
-    GIT = 'git'
+    GIT = declare('git')
+    SVN = declare('svn')
 
 class Runtimes(BaseEnv):
     kind = EnvKind.runtime
 
-    NODE = 'node'
+    NODE = declare('node')
 
 class Languages(BaseEnv):
     kind = EnvKind.lang
 
-    PYTHON = 'python'
-    TYPE_SCRIPT = 'typescript'
-    JAVA_SCRIPT = 'javascript'
+    PYTHON = declare('python', 'py')
+    TYPE_SCRIPT = declare('typescript', 'ts')
+    JAVA_SCRIPT = declare('javascript', 'js')
 
 class Editors(BaseEnv):
     kind = EnvKind.editor
 
-    VSCODE = 'vscode'
+    VSCODE = declare('vscode', 'vsc')
 
 class Tools(BaseEnv):
     kind = EnvKind.tool
 
-    PIPENV = 'pipenv'
+    PIPENV = declare('pipenv')
 
 class Frameworks(BaseEnv):
     kind = EnvKind.framework
 
-    PYTEST = 'pytest'
+    PYTEST = declare('pytest')
 
 class Envs(VCS, Runtimes, Languages, Editors, Tools, Frameworks):
     map: Dict[str, str] = None

@@ -49,9 +49,7 @@ class Env(InitedCommand):
         self._local_conf['envs'] = self._local_conf.get('envs', []) + keys
         self._conf.mark_local_changed()
 
-        from ..env_builders import IEnvBuilder
-        for env in keys:
-            for builder in IEnvBuilder.get_builders_for_env(env, self._ctx, self._conf):
-                builder.init()
+        from ..env_builders import BuilderCollection
+        BuilderCollection.from_conf().init()
 
         self._conf.save()

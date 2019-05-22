@@ -26,12 +26,7 @@ class Git(GitBase):
 
     class ignore(GitBase):
 
-        def update(self, ctx: click.Context):
+        def update(self):
             '''update local gitignore'''
-
-            conf: PkgitConf = pkgit_ioc[PkgitConf]
-
-            from ..env_builders import IEnvBuilder
-            for builder in IEnvBuilder.get_builders_for_env(Envs.GIT, ctx, conf):
-                builder.update()
-
+            from ..env_builders import BuilderCollection
+            BuilderCollection.from_env(Envs.GIT).update()
