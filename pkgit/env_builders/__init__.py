@@ -109,7 +109,7 @@ class BuilderCollection:
 
     def fix_env(self):
         echo(
-            'prepare'
+            'prepare ...'
         )
 
         ctx = self._ctx
@@ -161,11 +161,18 @@ class BuilderCollection:
         else:
             return [self._env]
 
-    def _get_builders(self, envs=None):
+    def _get_builders(self, envs: list=None):
         ctx = self._ctx
         conf = self._conf
         if envs is None:
             envs = self._get_envs()
+
+        deps = {}
+        for env in envs:
+            deps[env] = get_requires(env).get_requires()
+        def order(item):
+            return len(deps[item])
+        envs = sorted(envs, key=order) # ensure deps order
 
         builders = []
         for env in envs:
