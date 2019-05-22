@@ -5,15 +5,19 @@
 #
 # ----------
 
+import subprocess
+from contextlib import contextmanager
 from typing import List, Tuple
 
 from click import Context, get_current_context, echo, style
 import fsoopify
 import execode
+from anyioc import ServiceProvider
 from anyioc.g import get_namespace_provider
 
 from ..core.conf import PkgitConf
-from ..core.deps import get_requires, declare_requires
+from ..core.deps import get_requires, declare_requires, sort_envs, declare_order
+from ..utils.echo import Printer
 
 ioc = get_namespace_provider()
 
@@ -24,10 +28,13 @@ class IEnvBuilder:
     env: str = None # require overwrite on subclass
     requires_envs: Tuple[str, ...] = ()
 
-    def __init__(self, ctx, conf):
+    def __init__(self, ctx, conf, ioc, printer):
         self._ctx: Context = ctx
         self._conf: PkgitConf = conf
         self._echoed = False
+        self._prefix = '      '
+        self._ioc: ServiceProvider = ioc
+        self._printer: Printer = printer
 
     def __init_subclass__(cls):
         if cls.__init__ is not IEnvBuilder.__init__:
@@ -89,12 +96,31 @@ class IEnvBuilder:
         '''get cwd for the proj'''
         return fsoopify.DirectoryInfo(self.get_cwd_path())
 
-    def echo(self, message: str, *args, **kwargs):
+    @contextmanager
+    def open_proc(self, args, stdout=False, stderr=False):
+        self.echo('run proc ' + style(str(args), fg='bright_magenta'))
+        proc = subprocess.Popen(args,
+            cwd=str(self.get_cwd_path()), shell=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        yield proc
+        if not stdout:
+            for line in proc.stdout:
+                self.echo('    ' + line.decode('utf-8'))
+        code = proc.wait()
+        self.echo(f'end proc with code {code}')
+
+    def _ensure_echo_header(self):
         if not self._echoed:
             echo('   {}:'.format(style(self.env, fg='bright_cyan', dim=True)))
             self._echoed = True
+
+    def echo(self, message: str, *args, **kwargs):
+        return self._printer.echo(message, *args, **kwargs)
+
+        self._ensure_echo_header()
         lines = [m for m in message.splitlines()]
-        lines = [f'      {l}' for l in lines]
+        lines = [self._prefix + l for l in lines]
         echo('\n'.join(lines), *args, **kwargs)
 
 
@@ -103,19 +129,23 @@ class BuilderCollection:
         self._env = env
         self._ctx: Context = ctx
         self._conf: PkgitConf = conf
+        self._ioc = ioc.scope()
+        self._printer = Printer()
 
-    def __iter__(self):
-        return iter(self._get_builders())
-
-    def fix_env(self):
-        echo(
-            'prepare ...'
+    def _make_builder(self, builder_class: type) -> IEnvBuilder:
+        return builder_class(
+            self._ctx,
+            self._conf,
+            self._ioc,
+            self._printer
         )
 
-        ctx = self._ctx
+    def fix_env(self):
+        echo('prepare ...')
+
         conf = self._conf
 
-        for builder in [cls(ctx, conf) for cls in _builders_fix_env]:
+        for builder in [self._make_builder(cls) for cls in _builders_fix_env]:
             builder.fix_env()
 
         local_conf = conf.get_local_conf()
@@ -144,10 +174,11 @@ class BuilderCollection:
         self._invoke_command('update')
 
     def _invoke_command(self, command):
-        envs = self._get_envs()
+        envs = sort_envs(self._get_envs())
         self._print_envs(envs, command)
-        for builder in self._get_builders():
-            getattr(builder, command)()
+        for builder in self._get_builders(envs):
+            with self._printer.scoped(builder.env):
+                getattr(builder, command)()
 
     def _print_envs(self, envs, command):
         echo(
@@ -161,23 +192,11 @@ class BuilderCollection:
         else:
             return [self._env]
 
-    def _get_builders(self, envs: list=None):
-        ctx = self._ctx
-        conf = self._conf
-        if envs is None:
-            envs = self._get_envs()
-
-        deps = {}
-        for env in envs:
-            deps[env] = get_requires(env).get_requires()
-        def order(item):
-            return len(deps[item])
-        envs = sorted(envs, key=order) # ensure deps order
-
+    def _get_builders(self, envs: list):
         builders = []
         for env in envs:
             clses = _builders.get(env, ())
-            builders.extend([cls(ctx, conf) for cls in clses])
+            builders.extend([self._make_builder(cls) for cls in clses])
         return builders
 
     @staticmethod

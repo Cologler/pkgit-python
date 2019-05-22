@@ -5,65 +5,87 @@
 #
 # ----------
 
+from ..utils.sort import SortRule
+
 _all = {}
+_order = {}
 _empty_set = frozenset()
 
-class _Chain:
-    def __init__(self):
-        self._l = []
-        self._s = set()
+_sort_rule = SortRule()
 
-    def ensure(self, v):
-        if v in self._s:
-            raise TypeError(self._l)
-
-        self._l.append(v)
-        self._s.add(v)
-
-
-class Requiresable:
+class Node:
     def get_requires(self):
         return _empty_set
 
     def get_requires_chain(self):
         return _empty_set
 
+    def _internal_get_requires_chain(self, items: list):
+        pass
 
-class RequiresNode:
+class RequiresNode(Node):
+    _registers = {}
+
+    @classmethod
+    def get_node(cls, env, create=False):
+        try:
+            return cls._registers[env]
+        except KeyError:
+            pass
+
+        if create:
+            return cls._registers.setdefault(env, cls(env))
+        else:
+            return _Empty
+
     def __init__(self, env):
         self._env = env
         self._requires = set()
 
-    def require(self, *deps):
-        self._internal_require(_Chain(), deps)
+    def __repr__(self):
+        return f'deps({self._env}, {self._requires})'
 
-    def _internal_require(self, chain: _Chain, deps: tuple):
-        chain.ensure(self._env)
+    def _raise_recursion_require(self, dep):
+        raise TypeError((self._env, dep))
+
+    def require(self, *deps):
+        for dep in deps:
+            if dep == self._env:
+                raise TypeError
+            if self._env in self.get_node(dep).get_requires_chain():
+                self._raise_recursion_require(dep)
         self._requires.update(deps)
 
     def get_requires(self):
+        '''get direct deps (without self).'''
         return frozenset(self._requires)
 
     def get_requires_chain(self):
+        '''get deps chain (without self).'''
         items = []
-        for dep in self._requires:
-            items.append(dep)
-            node: RequiresNode = _all.get(dep)
-            if node:
-                items.extend(node.get_requires_chain())
+        self._internal_get_requires_chain(items)
         return frozenset(items)
 
-_Empty = Requiresable()
+    def _internal_get_requires_chain(self, items: list):
+        for dep in self._requires:
+            items.append(dep)
+            get_requires(dep)._internal_get_requires_chain(items)
+
+
+_Empty = Node()
+
+def get_requires(env, create=False) -> Node:
+    return RequiresNode.get_node(env)
 
 def declare_requires(env, *deps):
-    try:
-        rn: RequiresNode = _all[env]
-    except KeyError:
-        rn: RequiresNode = _all.setdefault(env, RequiresNode(env))
+    rn = RequiresNode.get_node(env, True)
     rn.require(*deps)
+    for dep in deps:
+        _sort_rule.has_order(dep, env)
 
-def get_requires(env) -> Requiresable:
-    try:
-        return _all[env]
-    except KeyError:
-        return _Empty
+def declare_order(env, then_env):
+    _sort_rule.has_order(env, then_env)
+
+def sort_envs(envs: list):
+    '''sort envs by deps, return a new list.'''
+    return _sort_rule.sort(envs)

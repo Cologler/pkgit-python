@@ -5,10 +5,11 @@
 #
 # ----------
 
-from . import IEnvBuilder, declare_requires
+from . import IEnvBuilder, declare_requires, declare_order
 from ..core.envs import Envs
 
 declare_requires(Envs.PYTEST, Envs.PYTHON)
+declare_order(Envs.PIPENV, Envs.PYTEST)
 
 class PyTestEnvBuilder(IEnvBuilder):
     env = Envs.PYTEST
@@ -39,6 +40,11 @@ class PyTestEnvBuilder(IEnvBuilder):
         self.echo('create pytest launcher for vscode')
 
     def init(self):
+        # install package
+        self.echo('invoke install pytest:')
+        with self._printer.scoped():
+            self._ioc['install-python-package']('pytest', dev=True)
+
         envs = self.get_envs()
         if Envs.VSCODE in envs:
             self.update_for_vscode()
