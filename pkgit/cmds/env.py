@@ -7,14 +7,14 @@
 
 import click
 
-from ..core import pkgit_ioc, PkgitConf, Envs
+from ..core import pkgit_ioc, PkgitConf, Envs, get_env
 
 from .bases import InitedCommand
 
 def get_wellknow_envs(ctx, envs_list):
     keys = []
     for env in envs_list:
-        k = Envs.map.get(env)
+        k = get_env(env)
         if k is None:
             ctx.fail('Unable to parse env: ' + click.style(env, fg='green'))
         keys.append(k)
