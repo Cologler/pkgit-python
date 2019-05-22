@@ -5,8 +5,6 @@
 #
 # ----------
 
-import click
-
 from . import IEnvBuilder, declare_env_requires
 from ..core.envs import Envs
 
@@ -38,7 +36,7 @@ class PyTestEnvBuilder(IEnvBuilder):
         vscode.ensure_created()
         launch.dump(launch_c)
 
-        click.echo('create pytest launcher for vscode')
+        self.echo('create pytest launcher for vscode')
 
     def init(self):
         envs = self.get_envs()

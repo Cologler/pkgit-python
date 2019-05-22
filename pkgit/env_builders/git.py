@@ -6,7 +6,7 @@
 # ----------
 
 import fsoopify
-import click
+from click import style
 
 from . import IEnvBuilder
 from ..utils import lazy
@@ -33,10 +33,10 @@ class GitEnvBuilder(IEnvBuilder):
         if Envs.GIT not in self.get_envs():
             git_dir_name = '.git'
             if self.get_cwd().get_dirinfo(git_dir_name).is_directory():
-                click.echo(
+                self.echo(
                     'added env {} because of found dir {}'.format(
-                        click.style(Envs.GIT, fg='green'),
-                        click.style(git_dir_name, fg='green')
+                        style(Envs.GIT, fg='green'),
+                        style(git_dir_name, fg='green')
                     )
                 )
                 self.add_envs(Envs.GIT)
@@ -50,7 +50,7 @@ class GitIgnoreEnvBuilder(IEnvBuilder):
 
     def init(self):
         if self._get_gitignore_file().is_file():
-            click.echo(f'ignore init gitignore since it is exists')
+            self.echo(f'ignore update gitignore since it is exists')
             return
         self.update()
 
@@ -69,8 +69,8 @@ class GitIgnoreEnvBuilder(IEnvBuilder):
         if not gitignores:
             return
 
-        gi_envs = ', '.join(click.style(z[0], fg='green') for z in gitignores)
-        click.echo(f'begin update gitignore for envs: {gi_envs}')
+        gi_envs = ', '.join(style(z[0], fg='green') for z in gitignores)
+        self.echo(f'begin update gitignore for envs: {gi_envs}')
 
         sb = []
         for gii in gitignores:
@@ -81,13 +81,13 @@ class GitIgnoreEnvBuilder(IEnvBuilder):
             sb.append('#' * 5 + f'  url: {url}')
             sb.append('#' * 100)
             sb.append('')
-            url_s = click.style(url, fg='green')
-            click.echo(f'   http get {url_s} ...')
+            url_s = style(url, fg='green')
+            self.echo(f'   http get {url_s} ...')
             r = requests.get(url)
             if r.status_code != 200:
-                sc = click.style(str(r.status_code), fg='red')
+                sc = style(str(r.status_code), fg='red')
                 self._ctx.fail('status code {sc} when gets ' +
-                    click.style(url, fg='green'))
+                    style(url, fg='green'))
             sb.append(r.text)
             sb.append('')
             sb.append('')
@@ -95,4 +95,4 @@ class GitIgnoreEnvBuilder(IEnvBuilder):
         doc = '\n'.join(sb)
         self._get_gitignore_file().write_text(doc, append=False)
 
-        click.echo(f'updated gitignore for envs: {gi_envs}')
+        self.echo(f'updated gitignore for envs: {gi_envs}')

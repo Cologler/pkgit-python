@@ -36,6 +36,7 @@ class IEnvBuilder:
     def __init__(self, ctx, conf):
         self._ctx: Context = ctx
         self._conf: PkgitConf = conf
+        self._echoed = False
 
     def __init_subclass__(cls):
         if cls.__init__ is not IEnvBuilder.__init__:
@@ -97,6 +98,14 @@ class IEnvBuilder:
         '''get cwd for the proj'''
         return fsoopify.DirectoryInfo(self.get_cwd_path())
 
+    def echo(self, message: str, *args, **kwargs):
+        if not self._echoed:
+            echo('   {}:'.format(style(self.env, fg='bright_cyan', dim=True)))
+            self._echoed = True
+        lines = [m for m in message.splitlines()]
+        lines = [f'      {l}' for l in lines]
+        echo('\n'.join(lines), *args, **kwargs)
+
 
 class BuilderCollection:
     def __init__(self, *, env, ctx, conf):
@@ -108,6 +117,10 @@ class BuilderCollection:
         return iter(self._get_builders())
 
     def fix_env(self):
+        echo(
+            'prepare:'
+        )
+
         ctx = self._ctx
         conf = self._conf
 
@@ -122,9 +135,10 @@ class BuilderCollection:
             for new in (requires - envs):
                 deps.setdefault(new, []).append(env)
         if deps:
+            echo('   {}:'.format(style('deps', fg='bright_cyan', dim=True)))
             for dep, dep_src in deps.items():
                 echo(
-                    'added env {} because of env {} require it'.format(
+                    '      added env {} because of env {} require it'.format(
                         style(new, fg='green'),
                         ', '.join([style(x, fg='green') for x in dep_src])
                     )
@@ -133,21 +147,34 @@ class BuilderCollection:
             local_conf['envs'] = list(envs)
 
     def init(self):
-        for builder in self._get_builders():
-            builder.init()
+        self._invoke_command('init')
 
     def update(self):
-        for builder in self._get_builders():
-            builder.update()
+        self._invoke_command('update')
 
-    def _get_builders(self, from_env=True):
+    def _invoke_command(self, command):
+        envs = self._get_envs()
+        self._print_envs(envs, command)
+        for builder in self._get_builders():
+            getattr(builder, command)()
+
+    def _print_envs(self, envs, command):
+        echo(
+            f'{command} for envs: ' +\
+            ', '.join([style(x, fg='green') for x in envs])
+        )
+
+    def _get_envs(self):
+        if self._env is None:
+            return self._conf.get_local_conf().get('envs', ())
+        else:
+            return [self._env]
+
+    def _get_builders(self, envs=None):
         ctx = self._ctx
         conf = self._conf
-
-        if self._env is None:
-            envs = conf.get_local_conf().get('envs', ())
-        else:
-            envs = [self._env]
+        if envs is None:
+            envs = self._get_envs()
 
         builders = []
         for env in envs:

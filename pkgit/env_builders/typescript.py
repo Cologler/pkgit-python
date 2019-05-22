@@ -6,6 +6,9 @@
 # ----------
 
 import subprocess
+from contextlib import contextmanager
+
+from click import style
 
 from ..core.envs import Envs
 from . import IEnvBuilder
@@ -13,14 +16,19 @@ from . import IEnvBuilder
 class TypeScriptBuilder(IEnvBuilder):
     env = Envs.TYPE_SCRIPT
 
-    def _tsc_run(self, args: list):
+    @contextmanager
+    def _open_tsc(self, args: list):
         args = ['tsc'] + args
-        return subprocess.run(args,
-            cwd=str(self.get_cwd_path()), shell=True
+        self.echo('run proc ' + style(str(args), fg='magenta'))
+        yield subprocess.Popen(args,
+            cwd=str(self.get_cwd_path()), shell=True, encoding='utf-8',
+            stdout=subprocess.PIPE
         )
+        self.echo('end proc ' + style(str(args), fg='magenta'))
 
     def init(self):
-        cp = self._tsc_run(['--init'])
-        if cp.returncode != 0:
-            return
+        with self._open_tsc(['--init']) as proc:
+            for line in proc.stdout:
+                self.echo('    ' + line)
+            proc.wait()
 

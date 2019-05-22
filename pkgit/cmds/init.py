@@ -14,7 +14,11 @@ from .env import get_wellknow_envs
 
 
 def init(self, ctx: click.Context, envs: str, license=None):
-    ''' init project on current project. '''
+    '''
+    init project on current project.
+
+    ENVS split by `+`
+    '''
     if not envs:
         ctx.fail(
             'You need to let pkgit known what kind of project you want to create, for example, ' +
