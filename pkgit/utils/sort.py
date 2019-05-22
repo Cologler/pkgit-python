@@ -5,25 +5,73 @@
 # a simple sort system
 # ----------
 
-_empty_set = frozenset()
+from abc import ABC, abstractmethod
 
-class SortRule:
+
+class _INode(ABC):
+    def has_before(self, store, value):
+        pass
+
+    @abstractmethod
+    def get_before_chain(self, store):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_order_code(self, store):
+        raise NotImplementedError
+
+
+class _EmptyNode(_INode):
+    _empty_set = frozenset()
+
+    def __repr__(self):
+        return 'Empty()'
+
+    def get_before_chain(self, _):
+        return self._empty_set
+
+    def get_order_code(self, _):
+        return 1
+
+_empty = _EmptyNode()
+
+
+class _RulesStore:
     def __init__(self):
         self._data = {}
 
-    def _get_node(self, key, create=False):
+    def get_rule(self, key, create=False) -> _INode:
         try:
             return self._data[key]
         except KeyError:
             pass
 
         if create:
-            return self._data.setdefault(key, _SortNode(key, self))
+            return self._data.setdefault(key, _SortNode(key))
         else:
             return _empty
 
+    def get_key(self, item):
+        node = self.get_rule(item)
+        if node is None:
+            code = (1, node)
+        else:
+            code = (0, node.get_order_code(self))
+        return code
+
+    def build(self):
+        ''' build a cachable store '''
+        store = _RulesStore()
+        store._data.update(dict((k, _CachedNode(v)) for (k, v) in self._data.items()))
+        return store
+
+class SortRule:
+    def __init__(self):
+        self._data = {}
+        self._store = _RulesStore()
+
     def has_order(self, first, second):
-        self._get_node(second, True).has_before(first)
+        self._store.get_rule(second, True).has_before(self._store, first)
 
     def has_orders(self, iterable):
         '''
@@ -42,71 +90,49 @@ class SortRule:
         for pair in zip(items, items[1:]):
             self.has_order(*pair)
 
-    def get_key(self, item):
-        node = self._get_node(item)
-        if node is None:
-            code = (1, node)
-        else:
-            code = (0, node.get_order_code())
-        return code
-
     def sort(self, iterable):
-        cached = SortRule()
-        cached._data.update(dict((k, _CachedNode(v)) for (k, v) in self._data.items()))
-        return sorted(iterable, key=cached.get_key)
+        store = self._store.build()
+        return sorted(iterable, key=store.get_key)
 
 
-class _EmptyNode:
-    def __repr__(self):
-        return 'Empty()'
-
-    def get_before_chain(self):
-        return _empty_set
-
-    def get_order_code(self):
-        return 1
-
-_empty = _EmptyNode()
-
-
-class _CachedNode:
+class _CachedNode(_INode):
     def __init__(self, node):
         self._node = node
 
-    def get_order_code(self):
+    def get_before_chain(self, store):
+        raise NotImplementedError
+
+    def get_order_code(self, store):
         try:
             return self._value
         except AttributeError:
             pass
 
-        self._value = self._node.get_order_code()
+        self._value = self._node.get_order_code(store)
         return self._value
 
 
-class _SortNode:
-    def __init__(self, me, manager):
+class _SortNode(_INode):
+    def __init__(self, me):
         self._me = me # value of this node
-        self._manager: SortManager = manager
         self._before_me = set()
 
     def __repr__(self):
         return f'SortNode({self._before_me})'
 
-    def has_before(self, value):
+    def has_before(self, store: _RulesStore, value):
         if self._me == value:
             raise TypeError
-        if self._me in self._manager._get_node(value).get_before_chain():
+        if self._me in store.get_rule(value).get_before_chain(store):
             raise TypeError
         self._before_me.add(value)
 
-    def get_before_chain(self):
+    def get_before_chain(self, store: _RulesStore):
         ret = set()
         ret.update(self._before_me)
         for item in self._before_me:
-            ret.update(self._manager._get_node(item).get_before_chain())
+            ret.update(store.get_rule(item).get_before_chain(store))
         return ret
 
-    def get_order_code(self):
-        return sum(self._manager._get_node(x).get_order_code() for x in self._before_me) + 1
-
-
+    def get_order_code(self, store: _RulesStore):
+        return sum(store.get_rule(x).get_order_code(store) for x in self._before_me) + 1
