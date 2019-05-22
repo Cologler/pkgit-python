@@ -16,7 +16,8 @@ from ..core.conf import PkgitConf
 
 ioc = get_namespace_provider()
 
-_builder_classes = {}
+_builders = {}
+_builders_fix_env = []
 
 class IEnvBuilder:
     def __init__(self, ctx, conf):
@@ -27,9 +28,17 @@ class IEnvBuilder:
         if cls.__init__ is not IEnvBuilder.__init__:
             raise TypeError
 
-        _builder_classes.setdefault(cls.env, []).append(cls)
+        _builders.setdefault(cls.env, []).append(cls)
+        if cls.fix_env is not IEnvBuilder:
+            _builders_fix_env.append(cls)
 
     # exec core
+
+    def fix_env(self):
+        '''
+        fix env.
+        '''
+        pass
 
     def invoke(self, command: str):
         pass
@@ -42,9 +51,11 @@ class IEnvBuilder:
             return self.invoke(command)
 
     def init(self):
+        'init env'
         return self._fallback_invoke('init')
 
     def update(self):
+        'update env'
         return self._fallback_invoke('update')
 
     # helpers
@@ -53,6 +64,11 @@ class IEnvBuilder:
         '''get envs list from conf'''
         local_conf = self._conf.get_local_conf()
         return local_conf.get('envs', ())
+
+    def add_envs(self, *envs):
+        '''add envs to conf'''
+        local_conf = self._conf.get_local_conf()
+        local_conf.setdefault('envs', []).extend(envs)
 
     def get_cwd_path(self) -> fsoopify.Path:
         '''get cwd path for the proj'''
@@ -64,19 +80,43 @@ class IEnvBuilder:
 
 
 class BuilderCollection:
-    def __init__(self, builders: List[IEnvBuilder]):
-        self._builders = builders
+    def __init__(self, *, env, ctx, conf):
+        self._env = env
+        self._ctx: Context = ctx
+        self._conf: PkgitConf = conf
 
     def __iter__(self):
-        return iter(self._builders)
+        return iter(self._get_builders())
+
+    def fix_env(self):
+        ctx = self._ctx
+        conf = self._conf
+
+        for builder in [cls(ctx, conf) for cls in _builders_fix_env]:
+            builder.fix_env()
 
     def init(self):
-        for builder in self._builders:
+        for builder in self._get_builders():
             builder.init()
 
     def update(self):
-        for builder in self._builders:
+        for builder in self._get_builders():
             builder.update()
+
+    def _get_builders(self, from_env=True):
+        ctx = self._ctx
+        conf = self._conf
+
+        if self._env is None:
+            envs = conf.get_local_conf().get('envs', ())
+        else:
+            envs = [self._env]
+
+        builders = []
+        for env in envs:
+            clses = _builders.get(env, ())
+            builders.extend([cls(ctx, conf) for cls in clses])
+        return builders
 
     @staticmethod
     def from_env(env, ctx=None, conf=None):
@@ -86,8 +126,7 @@ class BuilderCollection:
         if conf is None:
             conf = ioc[PkgitConf]
 
-        classes = _builder_classes.get(env, ())
-        return BuilderCollection([cls(ctx, conf) for cls in classes])
+        return BuilderCollection(env=env, ctx=ctx, conf=conf)
 
     @staticmethod
     def from_conf(ctx=None, conf=None):
@@ -97,11 +136,7 @@ class BuilderCollection:
         if conf is None:
             conf = ioc[PkgitConf]
 
-        local_conf = conf.get_local_conf()
-        builders = []
-        for env in local_conf.get('envs', ()):
-            builders.extend(BuilderCollection.from_env(env, ctx, conf))
-        return BuilderCollection(builders)
+        return BuilderCollection(env=None, ctx=ctx, conf=conf)
 
 
 env_builders_dir = fsoopify.Path.from_caller_file().dirname

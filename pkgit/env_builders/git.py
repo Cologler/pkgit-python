@@ -29,11 +29,17 @@ gitignore_map_factory = lazy(make_env_gitignore_map)
 class GitEnvBuilder(IEnvBuilder):
     env = Envs.GIT
 
-    def init(self):
-        pass
-
-    def update(self):
-        pass
+    def fix_env(self):
+        if Envs.GIT not in self.get_envs():
+            git_dir_name = '.git'
+            if self.get_cwd().get_dirinfo(git_dir_name).is_directory():
+                click.echo(
+                    'added env {} because found dir {}'.format(
+                        click.style(Envs.GIT, fg='green'),
+                        click.style(git_dir_name, fg='green')
+                    )
+                )
+                self.add_envs(Envs.GIT)
 
 
 class GitIgnoreEnvBuilder(IEnvBuilder):
