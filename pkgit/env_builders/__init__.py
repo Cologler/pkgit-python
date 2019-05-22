@@ -5,9 +5,9 @@
 #
 # ----------
 
-from typing import List
+from typing import List, Tuple
 
-from click import Context, get_current_context
+from click import Context, get_current_context, echo, style
 import fsoopify
 import execode
 from anyioc.g import get_namespace_provider
@@ -16,20 +16,39 @@ from ..core.conf import PkgitConf
 
 ioc = get_namespace_provider()
 
+_requires_envs = {}
+
+def declare_env_requires(env, *require_envs):
+    s: set = _requires_envs.setdefault(env, set())
+    assert isinstance(require_envs, tuple)
+    s.update(require_envs)
+
+def get_env_requires(env) -> List[str]:
+    return frozenset(_requires_envs.get(env, ()))
+
 _builders = {}
 _builders_fix_env = []
 
 class IEnvBuilder:
+    env: str = None # require overwrite on subclass
+    requires_envs: Tuple[str, ...] = ()
+
     def __init__(self, ctx, conf):
         self._ctx: Context = ctx
         self._conf: PkgitConf = conf
 
     def __init_subclass__(cls):
         if cls.__init__ is not IEnvBuilder.__init__:
-            raise TypeError
+            raise TypeError(f'{cls} should not override __init__()')
 
-        _builders.setdefault(cls.env, []).append(cls)
-        if cls.fix_env is not IEnvBuilder:
+        # for env
+        env = cls.env
+        if env is None:
+            raise TypeError(f'{cls} should overwrite class var env')
+        _builders.setdefault(env, []).append(cls)
+
+        # for fix_env
+        if cls.fix_env is not IEnvBuilder.fix_env:
             _builders_fix_env.append(cls)
 
     # exec core
@@ -94,6 +113,22 @@ class BuilderCollection:
 
         for builder in [cls(ctx, conf) for cls in _builders_fix_env]:
             builder.fix_env()
+
+        local_conf = conf.get_local_conf()
+        envs_src = local_conf.get('envs', ())
+        envs_set = set(envs_src)
+        for env in envs_src:
+            requires = get_env_requires(env)
+            for new in (requires - envs_set):
+                echo(
+                    'added env {} because env {} require it'.format(
+                        style(new, fg='green'),
+                        style(env, fg='green')
+                    )
+                )
+            envs_set.update(get_env_requires(env))
+        if len(envs_set) > len(envs_src):
+            local_conf['envs'] = list(envs_set)
 
     def init(self):
         for builder in self._get_builders():

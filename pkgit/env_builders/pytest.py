@@ -8,7 +8,9 @@
 import click
 
 from ..core.envs import Envs
-from . import IEnvBuilder
+from . import IEnvBuilder, declare_env_requires
+
+declare_env_requires(Envs.PYTEST, Envs.PYTHON)
 
 class PyTestEnvBuilder(IEnvBuilder):
     env = Envs.PYTEST
