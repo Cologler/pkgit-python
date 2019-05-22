@@ -77,7 +77,7 @@ class IEnvBuilder:
 
 
 class BuilderCollection:
-    def __init__(self, builders: List[IEnvBuilder]:
+    def __init__(self, builders: List[IEnvBuilder]):
         self._builders = builders
 
     def __iter__(self):
