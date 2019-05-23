@@ -38,19 +38,38 @@ class PythonEnvBuilder(IEnvBuilder):
         self._ioc.register_value('proj-kind', _PROJ_KINDS[proj_kind])
 
     def init(self):
-        proj_kind: stt = self._ioc['proj-kind']
-
+        proj_kind: str = self._ioc['proj-kind']
         if proj_kind == 'package':
-            use_setupmeta_builder = self._printer.prompt_yn('did you want to use {}?'.format(
-                style('setupmeta-builder', fg='green')
-            ))
+            self._init_package()
+
+    def _init_package(self):
+        use_setupmeta_builder = self._printer.prompt_yn('did you want to use {}?'.format(
+            style('setupmeta-builder', fg='green')
+        ))
+        if use_setupmeta_builder:
+            self.echo('invoke install setupmeta-builder:')
+            self._ioc['install-python-package']('setupmeta-builder', dev=True)
+
+        setup = self.get_cwd().get_fileinfo('setup.py')
+        if not setup.is_file():
             if use_setupmeta_builder:
-                self.echo('invoke install setupmeta-builder:')
-                self._ioc['install-python-package']('setupmeta-builder', dev=True)
-            setup = self.get_cwd().get_fileinfo('setup.py')
-            if not setup.is_file():
                 self.echo(f'create {setup.path.name}')
                 setup_cont = '\n'.join([
                     'from setupmeta_builder import setup_it', '', 'setup_it()'
                 ])
                 setup.write_text(setup_cont)
+
+        # make dir for package
+        package_name = str(self.get_cwd_path().name)
+        if package_name.endswith('-python'):
+            package_name = package_name[:-7]
+        package_dir = self.get_cwd().get_dirinfo(package_name)
+        if not package_dir.is_directory():
+            self.echo('create dir {} for package'.format(
+                package_name
+            ))
+            package_dir.create()
+            self.echo('create file {}/{} for package'.format(
+                package_name, '__init__.py'
+            ))
+            package_dir.get_fileinfo('__init__.py').write_text('')
