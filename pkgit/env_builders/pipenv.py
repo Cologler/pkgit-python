@@ -28,16 +28,13 @@ class PipenvEnvBuilder(IEnvBuilder):
                 self.add_envs(Envs.PIPENV)
 
     def _install_from_pipenv(self, package_name: str, **kwargs):
-        self._printer.header = self.env
+        with self._printer.scoped(self.env):
+            args = ['pipenv', 'install', package_name]
+            if kwargs.get('dev', False):
+                args.append('--dev')
 
-        args = ['pipenv', 'install', package_name]
-        if kwargs.get('dev', False):
-            args.append('--dev')
+            with self.open_proc(args, stdout=False, stderr=True) as proc:
+                pass
 
-        with self.open_proc(args, stdout=True) as proc:
-            # pipenv use stderr as stdout
-            # just read and ignore
-            buf = proc.stderr.read()
-
-    def init(self):
+    def conf_ioc(self):
         self._ioc.register_value('install-python-package', self._install_from_pipenv)

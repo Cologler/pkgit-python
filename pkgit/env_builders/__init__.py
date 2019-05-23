@@ -31,8 +31,6 @@ class IEnvBuilder:
     def __init__(self, ctx, conf, ioc, printer):
         self._ctx: Context = ctx
         self._conf: PkgitConf = conf
-        self._echoed = False
-        self._prefix = '      '
         self._ioc: ServiceProvider = ioc
         self._printer: Printer = printer
 
@@ -54,7 +52,7 @@ class IEnvBuilder:
 
     def fix_env(self):
         '''
-        fix env.
+        try to use the `IEnvBuilder` to fill the missing envs.
         '''
         pass
 
@@ -67,6 +65,12 @@ class IEnvBuilder:
         '''
         if getattr(type(self), command) is getattr(IEnvBuilder, command):
             return self.invoke(command)
+
+    def conf_ioc(self):
+        '''
+        run before any command like `init`, `update` to config `self._ioc`.
+        '''
+        return self._fallback_invoke('conf_ioc')
 
     def init(self):
         'init env'
@@ -97,31 +101,37 @@ class IEnvBuilder:
         return fsoopify.DirectoryInfo(self.get_cwd_path())
 
     @contextmanager
-    def open_proc(self, args, stdout=False, stderr=False):
+    def open_proc(self, args: List[str], *, stdout=False, stderr=False, encoding=None):
+        '''
+        if `stdout` or `stderr` set to `True`, mean caller will handle the output.
+        '''
+
         self.echo('run proc ' + style(str(args), fg='bright_magenta'))
+
         proc = subprocess.Popen(args,
-            cwd=str(self.get_cwd_path()), shell=True,
+            cwd=str(self.get_cwd_path()), shell=True, encoding=encoding,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
         yield proc
+
+        def echo_stream(stream):
+            for line in stream:
+                if not encoding:
+                    try:
+                        line = line.decode('utf-8', 'ignore')
+                    except UnicodeDecodeError:
+                        pass # keep print bytes
+                self._printer.echo(f'    {line}')
         if not stdout:
-            for line in proc.stdout:
-                self.echo('    ' + line.decode('utf-8'))
+            echo_stream(proc.stdout)
+        if not stderr:
+            echo_stream(proc.stderr)
+
         code = proc.wait()
         self.echo(f'end proc with code {code}')
 
-    def _ensure_echo_header(self):
-        if not self._echoed:
-            echo('   {}:'.format(style(self.env, fg='bright_cyan', dim=True)))
-            self._echoed = True
-
-    def echo(self, message: str, *args, **kwargs):
-        return self._printer.echo(message, *args, **kwargs)
-
-        self._ensure_echo_header()
-        lines = [m for m in message.splitlines()]
-        lines = [self._prefix + l for l in lines]
-        echo('\n'.join(lines), *args, **kwargs)
+    def echo(self, message: str, **kwargs):
+        return self._printer.echo(message, **kwargs)
 
 
 class BuilderCollection:
@@ -176,8 +186,15 @@ class BuilderCollection:
     def _invoke_command(self, command):
         envs = sort_envs(self._get_envs())
         self._print_envs(envs, command)
-        for builder in self._get_builders(envs):
-            with self._printer.scoped(builder.env):
+
+        builders = self._get_builders(envs)
+
+        for builder in builders:
+            with self._printer.scoped(f'{builder.env} (conf step)'):
+                builder.conf_ioc()
+
+        for builder in builders:
+            with self._printer.scoped(f'{builder.env} ({command} step)'):
                 getattr(builder, command)()
 
     def _print_envs(self, envs, command):
@@ -192,7 +209,7 @@ class BuilderCollection:
         else:
             return [self._env]
 
-    def _get_builders(self, envs: list):
+    def _get_builders(self, envs: list) -> List[IEnvBuilder]:
         builders = []
         for env in envs:
             clses = _builders.get(env, ())

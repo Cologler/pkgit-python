@@ -42,8 +42,7 @@ class PyTestEnvBuilder(IEnvBuilder):
     def init(self):
         # install package
         self.echo('invoke install pytest:')
-        with self._printer.scoped():
-            self._ioc['install-python-package']('pytest', dev=True)
+        self._ioc['install-python-package']('pytest', dev=True)
 
         envs = self.get_envs()
         if Envs.VSCODE in envs:

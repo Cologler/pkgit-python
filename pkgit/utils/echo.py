@@ -42,9 +42,24 @@ class Printer:
                 click.echo(prefix + header)
             self._is_header_printed = True
 
-    def echo(self, message: str, *args, **kwargs):
-        self._ensure_echo_header()
+    def _format_message(self, message):
         prefix = self._get_total_prefix(1)
         lines = [m for m in message.splitlines()]
         lines = [prefix + l for l in lines]
-        click.echo('\n'.join(lines), *args, **kwargs)
+        return '\n'.join(lines)
+
+    def echo(self, message: str, **kwargs):
+        self._ensure_echo_header()
+        click.echo(self._format_message(message), **kwargs)
+
+    def prompt(self, message: str, default=None, type=str, **kwargs):
+        self._ensure_echo_header()
+        return click.prompt(self._format_message(message),
+            default=default, type=type,
+            **kwargs)
+
+    def prompt_yn(self, message: str, default=None, **kwargs):
+        'prompt yes or no'
+        return self.prompt(
+            message + ' [Y/N]', default=default, type=bool, **kwargs
+        )
