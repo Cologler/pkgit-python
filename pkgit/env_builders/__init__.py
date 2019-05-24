@@ -103,29 +103,37 @@ class IEnvBuilder:
     @contextmanager
     def open_proc(self, args: List[str], *, stdout=False, stderr=False, encoding=None):
         '''
-        if `stdout` or `stderr` set to `True`, mean caller will handle the output.
+
+        for args `stdout` and `stderr`,
+
+        * if set to `True`, mean caller want to handle the output;
+        * if set to `False`, mean caller want to handle the output by `open_proc`;
+        * if set to `None`, mean caller want to ignore the output;
+
+        arguments *encoding* will not pass to `subprocess`.
         '''
 
         self.echo('run proc ' + style(str(args), fg='bright_magenta'))
 
+        def get_mode(value):
+            if value is None:
+                return subprocess.DEVNULL
+            else:
+                return subprocess.PIPE
+
         proc = subprocess.Popen(args,
-            cwd=str(self.get_cwd_path()), shell=True, encoding=encoding,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            cwd=str(self.get_cwd_path()), shell=True,
+            stdout=get_mode(stdout), stderr=get_mode(stderr),
         )
+
         yield proc
 
-        def echo_stream(stream):
-            for line in stream:
-                if not encoding:
-                    try:
-                        line = line.decode('utf-8', 'ignore')
-                    except UnicodeDecodeError:
-                        pass # keep print bytes
-                self._printer.echo(f'    {line}')
-        if not stdout:
-            echo_stream(proc.stdout)
-        if not stderr:
-            echo_stream(proc.stderr)
+        if stdout is False:
+            print('here')
+            self._printer.echo_stream_for_subproc(proc.stdout, encoding)
+
+        if stderr is False:
+            self._printer.echo_stream_for_subproc(proc.stderr, encoding)
 
         code = proc.wait()
         self.echo(f'end proc with code {code}')
