@@ -63,3 +63,17 @@ class Printer:
         return self.prompt(
             message + ' [Y/N]', default=default, type=bool, **kwargs
         )
+
+    # for subproc
+
+    def echo_stream_for_subproc(self, stream, encoding=None):
+        for line in stream:
+            self.echo_line_for_subproc(stream, encoding)
+
+    def echo_line_for_subproc(self, line, encoding=None):
+        encoding = encoding or 'utf-8'
+        try:
+            line = line.decode('utf-8', 'ignore')
+        except UnicodeDecodeError:
+            pass # keep print bytes
+        self.echo(f'    {line}')
