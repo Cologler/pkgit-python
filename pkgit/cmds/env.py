@@ -7,16 +7,29 @@
 
 import click
 
-from ..core import pkgit_ioc, PkgitConf, Envs, get_env
+from ..core.envs import Envs, get_env, get_all_envs
 
 from .bases import InitedCommand
+
+def _guess_env(not_env: str):
+    all_envs = get_all_envs()
+    guess_items = set()
+
+    guess_items.update(env for env in all_envs if not_env in env)
+    if guess_items:
+        yield 'Guess:'
+        yield from [f'   {click.style(x, fg="cyan")}' for x in guess_items]
+
 
 def get_wellknow_envs(ctx, envs_list):
     keys = []
     for env in envs_list:
         k = get_env(env)
         if k is None:
-            ctx.fail('Unable to parse env: ' + click.style(env, fg='green'))
+            msgs = []
+            msgs.append('Unable to parse env: ' + click.style(env, fg='green'))
+            msgs.extend(_guess_env(env))
+            ctx.fail('\n'.join(msgs))
         keys.append(k)
     return keys
 

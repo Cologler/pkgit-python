@@ -7,19 +7,27 @@
 
 from itertools import chain
 
-_declared_items = {}
+_declared_items = []
+_declared_items_aliases = {}
 
 def declare(fullname, *alias):
+    _declared_items.append(fullname)
     for name in chain([fullname], alias):
-        assert name not in _declared_items
-        _declared_items[name] = fullname
+        assert name not in _declared_items_aliases
+        _declared_items_aliases[name] = fullname
     return fullname
 
 def get_env(key, d=None):
     '''
     try get env from key
     '''
-    return _declared_items.get(key, d)
+    return _declared_items_aliases.get(key, d)
+
+def get_all_envs():
+    '''
+    get a list of declared envs
+    '''
+    return _declared_items.copy()
 
 class Envs:
     # version control system
@@ -42,3 +50,7 @@ class Envs:
 
     # framework
     PYTEST = declare('pytest')
+
+    # ci
+    TRAVIS_CI = declare('travis-ci')
+    AZURE_PIPELINES = declare('azure-pipelines')
