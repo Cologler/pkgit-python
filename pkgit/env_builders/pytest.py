@@ -47,5 +47,3 @@ class PyTestEnvBuilder(IEnvBuilder):
         envs = self.get_envs()
         if Envs.VSCODE in envs:
             self.update_for_vscode()
-
-
