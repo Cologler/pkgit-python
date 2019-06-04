@@ -8,8 +8,9 @@
 from fsoopify import Path, NodeInfo, FileInfo, DirectoryInfo
 from fsoopify.utils import gettercache
 from anyioc.utils import inject_by_name
+from anyioc.g import get_namespace_provider
 
-from .ioc import pkgit_ioc
+ioc = get_namespace_provider()
 
 CONF_NAMES = ('.pkgit.json', '.pkgit.yaml')
 
@@ -61,7 +62,13 @@ class PkgitConf:
 
     def save(self):
         if self._is_local_new or self._local_changed:
-            self._local_file.dump(self.get_local_conf())
+            self._local_file.dump(
+                self.get_local_conf(),
+                kwargs=dict(
+                    ensure_ascii=False,
+                    indent=4
+                )
+            )
 
     def proxy_get(self, key):
         local_conf = self.get_local_conf()
@@ -72,4 +79,4 @@ class PkgitConf:
             return global_conf[key]
         return None
 
-pkgit_ioc.register_singleton(PkgitConf, inject_by_name(PkgitConf))
+ioc.register_singleton(PkgitConf, inject_by_name(PkgitConf))
