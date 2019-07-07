@@ -46,7 +46,7 @@ class PythonEnvBuilder(IEnvBuilder):
                 self._init_package()
             elif proj_kind == 'app':
                 pass
-            self._create_src_dir()()
+            self._create_src_dir()
 
     def _init_package(self):
         use_setupmeta_builder = self._printer.prompt_yn('did you want to use {}?'.format(
