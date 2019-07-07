@@ -39,8 +39,14 @@ class PythonEnvBuilder(IEnvBuilder):
 
     def init(self):
         proj_kind: str = self._ioc['proj-kind']
-        if proj_kind == 'package':
-            self._init_package()
+        if proj_kind is None:
+            pass
+        else:
+            if proj_kind == 'package':
+                self._init_package()
+            elif proj_kind == 'app':
+                pass
+            self._create_src_dir()()
 
     def _init_package(self):
         use_setupmeta_builder = self._printer.prompt_yn('did you want to use {}?'.format(
@@ -59,10 +65,13 @@ class PythonEnvBuilder(IEnvBuilder):
                 ])
                 setup.write_text(setup_cont)
 
-        # make dir for package
+    def _create_src_dir(self):
         package_name = str(self.get_cwd_path().name)
         if package_name.endswith('-python'):
             package_name = package_name[:-7]
+        if package_name.startswith('python-'):
+            package_name = package_name[7:]
+
         package_dir = self.get_cwd().get_dirinfo(package_name)
         if not package_dir.is_directory():
             self.echo('create dir {} for package'.format(
